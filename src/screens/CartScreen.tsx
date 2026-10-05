@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,18 @@ import {
 import { COLORS } from '../lib/constants';
 import { useCart, MobileCartItem } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { CheckoutModal } from '../components/CheckoutModal';
 
-export function CartScreen({ onGoToShop }: { onGoToShop?: () => void }) {
+export function CartScreen({
+  onGoToShop,
+  onGoToDashboard,
+}: {
+  onGoToShop?: () => void;
+  onGoToDashboard?: () => void;
+}) {
   const { items, removeFromCart, updateQuantity, clearCart, subtotal, totalItems, refreshCart } = useCart();
   const { user } = useAuth();
+  const [checkoutVisible, setCheckoutVisible] = useState(false);
 
   const renderItem = ({ item }: { item: MobileCartItem }) => {
     return (
@@ -111,12 +119,24 @@ export function CartScreen({ onGoToShop }: { onGoToShop?: () => void }) {
               <Text style={styles.summaryTotal}>₦{subtotal.toLocaleString()}</Text>
             </View>
 
-            <TouchableOpacity style={styles.checkoutBtn} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.checkoutBtn}
+              activeOpacity={0.85}
+              onPress={() => setCheckoutVisible(true)}
+            >
               <Text style={styles.checkoutBtnText}>⚡ Proceed to Checkout</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
+
+      {/* Checkout & Invoicing Modal */}
+      <CheckoutModal
+        visible={checkoutVisible}
+        onClose={() => setCheckoutVisible(false)}
+        onGoToDashboard={() => onGoToDashboard?.()}
+        onGoToShop={() => onGoToShop?.()}
+      />
     </SafeAreaView>
   );
 }

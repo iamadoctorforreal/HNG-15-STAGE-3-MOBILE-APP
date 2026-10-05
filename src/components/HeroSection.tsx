@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { COLORS } from '../lib/constants';
 
 const GREETINGS = [
@@ -55,6 +55,18 @@ export function HeroSection() {
         <Text style={styles.heroSubtitle}>
           Farm-raised in clean Abeokuta aquaculture ponds, meticulously gutted, thoroughly washed, and hygienically dried to golden-brown crisp perfection. 100% sand-grit free, rich in Omega-3, and sealed for safe shipping across Nigeria, the UK, and the USA.
         </Text>
+
+        {/* Authentic Dried Catfish Image Showcase */}
+        <View style={styles.imageShowcaseContainer}>
+          <Image
+            source={{ uri: 'https://shop.sawfywhite.com/images/catfish-real-glass-plate.png' }}
+            style={styles.heroCatfishImage}
+            resizeMode="cover"
+          />
+          <View style={styles.imageBadge}>
+            <Text style={styles.imageBadgeText}>🐟 Pure Golden-Smoked Abeokuta Catfish</Text>
+          </View>
+        </View>
 
         {/* 3 Core Trust Badges */}
         <View style={styles.trustGrid}>
@@ -142,7 +154,38 @@ const styles = StyleSheet.create({
     color: '#555555',
     lineHeight: 18,
     fontWeight: '400',
+    marginBottom: 12,
+  },
+  imageShowcaseContainer: {
+    width: '100%',
+    height: 180,
+    borderRadius: 16,
+    overflow: 'hidden',
     marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#D4A843',
+    backgroundColor: '#FAF8F5',
+    position: 'relative',
+  },
+  heroCatfishImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 82, 48, 0.88)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  imageBadgeText: {
+    color: '#FFF8E7',
+    fontSize: 11,
+    fontWeight: '800',
   },
   trustGrid: {
     flexDirection: 'row',

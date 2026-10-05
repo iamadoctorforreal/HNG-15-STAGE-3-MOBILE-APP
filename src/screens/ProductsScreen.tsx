@@ -15,14 +15,16 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { HeroSection } from '../components/HeroSection';
 import { LeadMagnetModal } from '../components/LeadMagnetModal';
+import { ProductDetailModal } from '../components/ProductDetailModal';
 
-export function ProductsScreen() {
+export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [products, setProducts] = useState<MobileProduct[]>(PRODUCTS);
   const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [leadMagnetVisible, setLeadMagnetVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<MobileProduct | null>(null);
 
   const fetchLiveProducts = useCallback(async () => {
     try {
@@ -72,7 +74,11 @@ export function ProductsScreen() {
     const isAdding = addingId === item.id;
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.92}
+        onPress={() => setSelectedProduct(item)}
+      >
         {/* Product Image */}
         <View style={styles.imageContainer}>
           <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
@@ -109,7 +115,7 @@ export function ProductsScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -162,6 +168,14 @@ export function ProductsScreen() {
         onClose={() => setLeadMagnetVisible(false)}
         userEmail={user?.email || ''}
         userName={user?.user_metadata?.first_name || ''}
+      />
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        visible={!!selectedProduct}
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onGoToCart={onGoToCart}
       />
     </SafeAreaView>
   );
