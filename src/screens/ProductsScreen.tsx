@@ -12,13 +12,17 @@ import {
 } from 'react-native';
 import { PRODUCTS, COLORS, MobileProduct, API_BASE_URL } from '../lib/constants';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { HeroSection } from '../components/HeroSection';
+import { LeadMagnetModal } from '../components/LeadMagnetModal';
 
 export function ProductsScreen() {
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const [products, setProducts] = useState<MobileProduct[]>(PRODUCTS);
   const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [leadMagnetVisible, setLeadMagnetVisible] = useState(false);
 
   const fetchLiveProducts = useCallback(async () => {
     try {
@@ -115,7 +119,31 @@ export function ProductsScreen() {
         data={products}
         keyExtractor={(item) => item.id}
         renderItem={renderProduct}
-        ListHeaderComponent={<HeroSection />}
+        ListHeaderComponent={
+          <View>
+            <HeroSection />
+
+            {/* Lead Magnet Free Guide Banner */}
+            <View style={styles.leadMagnetBanner}>
+              <View style={styles.leadMagnetBadge}>
+                <Text style={styles.leadMagnetBadgeText}>FREE GIFT 📖</Text>
+              </View>
+              <Text style={styles.leadMagnetTitle}>
+                The 7 Hidden Health Benefits of Dried Catfish
+              </Text>
+              <Text style={styles.leadMagnetSubtitle}>
+                Discover protein density, heart-healthy Omega-3s, and traditional cooking secrets from Abeokuta.
+              </Text>
+              <TouchableOpacity
+                style={styles.leadMagnetBtn}
+                onPress={() => setLeadMagnetVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.leadMagnetBtnText}>📥 Download Free PDF Guide →</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -126,6 +154,14 @@ export function ProductsScreen() {
             tintColor={COLORS.primary}
           />
         }
+      />
+
+      {/* Free Guide Modal */}
+      <LeadMagnetModal
+        visible={leadMagnetVisible}
+        onClose={() => setLeadMagnetVisible(false)}
+        userEmail={user?.email || ''}
+        userName={user?.user_metadata?.first_name || ''}
       />
     </SafeAreaView>
   );
@@ -235,5 +271,62 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 12,
+  },
+  leadMagnetBanner: {
+    backgroundColor: '#FAF5EA',
+    borderWidth: 1.5,
+    borderColor: '#E8C468',
+    borderRadius: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    shadowColor: '#E8C468',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  leadMagnetBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E8C468',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  leadMagnetBadgeText: {
+    color: '#78350F',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  leadMagnetTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#78350F',
+    marginBottom: 4,
+    fontFamily: 'serif',
+  },
+  leadMagnetSubtitle: {
+    fontSize: 11,
+    color: '#92400E',
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  leadMagnetBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 11,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  leadMagnetBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
   },
 });

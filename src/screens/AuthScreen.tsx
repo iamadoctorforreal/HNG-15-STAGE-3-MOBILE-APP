@@ -13,6 +13,7 @@ import { COLORS } from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { BrandLogo } from '../components/BrandLogo';
+import { DashboardScreen } from './DashboardScreen';
 
 const SUCCESS_GREETINGS = [
   { lang: 'English', getHeading: (name: string) => `Congratulations, ${name}!` },
@@ -152,48 +153,11 @@ export function AuthScreen() {
     refreshCart();
   };
 
-  // 1. Logged In State: Show Profile & Sign Out
+  // 1. Logged In State: Show Full Customer Dashboard (Wishlist, Order Tracking, Deals, etc.)
   if (user) {
-    const firstName =
-      user.user_metadata?.first_name ||
-      user.user_metadata?.full_name?.split(' ')[0] ||
-      user.email?.split('@')[0] ||
-      '';
-
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.profileCard}>
-          <BrandLogo size="md" showText={false} />
-
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
-            </Text>
-          </View>
-
-          <RotatingProfileGreeting name={firstName || 'Customer'} />
-          <Text style={styles.userEmail}>{user.email}</Text>
-
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Connected to Sawfy White Cloud</Text>
-          </View>
-
-          <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Cross-Platform Synchronization Active</Text>
-            <Text style={styles.infoText}>
-              You are logged in with the exact same account as the web storefront. Any items added to your cart here or on shop.sawfywhite.com sync in real-time.
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.signOutBtn}
-            onPress={handleSignOut}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+        <DashboardScreen />
       </SafeAreaView>
     );
   }

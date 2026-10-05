@@ -7,16 +7,26 @@ import { Header } from './src/components/Header';
 import { ProductsScreen } from './src/screens/ProductsScreen';
 import { CartScreen } from './src/screens/CartScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
+import { WaterfallBackground } from './src/components/WaterfallBackground';
+import { SplashScreen } from './src/components/SplashScreen';
 import { COLORS } from './src/lib/constants';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<'products' | 'cart' | 'account'>('products');
+  const [showSplash, setShowSplash] = useState(true);
   const { totalItems } = useCart();
   const { user } = useAuth();
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
+
+      {/* 1. Continuous Flowing Waterfall & Leaping Fish River Background */}
+      <WaterfallBackground />
+
+      {/* 2. Initial Royal Splash Screen */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+
       {/* Brand Header */}
       <Header />
 

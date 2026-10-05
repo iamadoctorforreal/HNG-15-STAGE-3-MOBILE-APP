@@ -18,11 +18,11 @@ export interface MobileProduct {
   id: string;
   title: string;
   slug: string;
-  description: string;
+  description?: string;
   base_price: number;
-  currency: string;
-  badge: string;
-  weightInfo: string;
+  currency?: string;
+  badge?: string;
+  weightInfo?: string;
   image: string;
   is_digital: boolean;
 }

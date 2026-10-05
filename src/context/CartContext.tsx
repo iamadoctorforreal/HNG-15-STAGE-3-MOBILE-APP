@@ -109,12 +109,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, session]);
 
-  // Real-time synchronization: Listen to changes in cart_items table
+  // Real-time synchronization: Listen to changes in cart_items table and instant broadcast
   useEffect(() => {
     refreshCart();
 
     const channel = supabase
-      .channel('mobile:cart_items_sync')
+      .channel('sawfy_cart_sync')
+      .on('broadcast', { event: 'cart_sync' }, () => {
+        refreshCart();
+      })
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'cart_items' },
@@ -125,7 +128,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       )
       .subscribe();
 
+    // Continuous 3-second background polling while app is mounted
+    const pollTimer = setInterval(() => {
+      refreshCart();
+    }, 3000);
+
     return () => {
+      clearInterval(pollTimer);
       supabase.removeChannel(channel);
     };
   }, [refreshCart]);
