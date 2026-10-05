@@ -79,7 +79,7 @@ export function HeroSection() {
             <Text style={styles.trustLabel}>Heart-Healthy</Text>
           </View>
           <View style={styles.trustItem}>
-            <Text style={styles.trustValue}>90 Days</Text>
+            <Text style={styles.trustValue}>1 Year</Text>
             <Text style={styles.trustLabel}>Shelf-Stable</Text>
           </View>
         </View>

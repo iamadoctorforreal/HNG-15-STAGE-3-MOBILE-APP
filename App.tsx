@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-na
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider, useCart } from './src/context/CartContext';
+import { WishlistProvider } from './src/context/WishlistContext';
 import { Header } from './src/components/Header';
 import { ProductsScreen } from './src/screens/ProductsScreen';
 import { CartScreen } from './src/screens/CartScreen';
@@ -28,7 +29,10 @@ function MainApp() {
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
 
       {/* Brand Header */}
-      <Header />
+      <Header
+        onGoToAccount={() => setActiveTab('account')}
+        onGoToHome={() => setActiveTab('products')}
+      />
 
       {/* Screen Views */}
       <View style={styles.content}>
@@ -99,7 +103,9 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <MainApp />
+        <WishlistProvider>
+          <MainApp />
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   );

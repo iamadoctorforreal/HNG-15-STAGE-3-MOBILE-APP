@@ -128,16 +128,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       )
       .subscribe();
 
-    // Continuous 3-second background polling while app is mounted
+    // Continuous background polling while app is mounted for rapid bidirectional sync
     const pollTimer = setInterval(() => {
       refreshCart();
-    }, 3000);
+    }, 1200);
 
     return () => {
       clearInterval(pollTimer);
       supabase.removeChannel(channel);
     };
   }, [refreshCart]);
+
+  const broadcastSync = () => {
+    try {
+      supabase.channel('sawfy_cart_sync').send({
+        type: 'broadcast',
+        event: 'cart_sync',
+        payload: { source: 'mobile', timestamp: Date.now() },
+      });
+    } catch (_) {}
+  };
 
   const addToCart = async (product: MobileProduct, quantity = 1) => {
     // 1. Optimistic UI update
@@ -166,7 +176,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // 2. Persist to shared Supabase backend
     try {
       if (user?.id) {
-        // Ensure cart exists
         let { data: cart } = await supabase
           .from('carts')
           .select('id')
@@ -183,7 +192,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (cart) {
-          // Check existing item
           const { data: existing } = await supabase
             .from('cart_items')
             .select('id, quantity')
@@ -220,7 +228,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }),
       });
 
-      // Refetch after 300ms to guarantee sync
+      broadcastSync();
       setTimeout(refreshCart, 300);
     } catch (err) {
       console.warn('Failed to sync added item from mobile:', err);
@@ -245,6 +253,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         headers,
         body: JSON.stringify({ productId, variantId }),
       });
+
+      broadcastSync();
+      setTimeout(refreshCart, 300);
     } catch (e) {
       console.warn('Remove error:', e);
     }
@@ -284,6 +295,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           }
         }
       }
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      await fetch(`${API_BASE_URL}/api/cart`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ productId, variantId, quantity: delta }),
+      });
+
+      broadcastSync();
+      setTimeout(refreshCart, 300);
     } catch (e) {
       console.warn('Update quantity error:', e);
     }
@@ -298,6 +320,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           await supabase.from('cart_items').delete().eq('cart_id', cart.id);
         }
       }
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      await fetch(`${API_BASE_URL}/api/cart`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ clearAll: true }),
+      });
+
+      broadcastSync();
+      setTimeout(refreshCart, 300);
     } catch (e) {
       console.warn('Clear cart error:', e);
     }

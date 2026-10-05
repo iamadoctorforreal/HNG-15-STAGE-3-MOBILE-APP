@@ -11,6 +11,7 @@ import {
 import { COLORS, MobileProduct } from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { BrandLogo } from '../components/BrandLogo';
 import { LeadMagnetModal } from '../components/LeadMagnetModal';
 import { PolicyModal, PolicyTab } from '../components/PolicyModal';
@@ -26,42 +27,12 @@ const PROFILE_GREETINGS = [
 export function DashboardScreen() {
   const { user, signOut } = useAuth();
   const { addToCart, refreshCart } = useCart();
+  const { items: wishlist, removeFromWishlist } = useWishlist();
 
   const [greetingIdx, setGreetingIdx] = useState(0);
   const [leadMagnetOpen, setLeadMagnetOpen] = useState(false);
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [policyTab, setPolicyTab] = useState<PolicyTab>('about');
-
-  // Wishlist items state (local interactive wishlist)
-  const [wishlist, setWishlist] = useState<any[]>([
-    {
-      id: '00000000-0000-0000-0000-000000000001',
-      title: 'Whole Round-Curled Dried Catfish (Big)',
-      slug: 'whole-round-curled-dried-catfish-big',
-      base_price: 9500,
-      image: 'https://shop.sawfywhite.com/images/catfish-round-curled.png',
-      is_digital: false,
-      tag: 'Most Popular',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000003',
-      title: 'Cut & Cleaned Dried Catfish Soup Pieces',
-      slug: 'cut-cleaned-dried-catfish-soup-pieces',
-      base_price: 8500,
-      image: 'https://shop.sawfywhite.com/images/catfish-soup-pieces.png',
-      is_digital: false,
-      tag: 'Ready to Cook',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000006',
-      title: 'Boneless Dried Catfish Steaks (Oven-Dried)',
-      slug: 'boneless-dried-catfish-steaks',
-      base_price: 13500,
-      image: 'https://shop.sawfywhite.com/images/catfish-steaks.png',
-      is_digital: false,
-      tag: 'Export Grade',
-    },
-  ]);
 
   // Rotate greeting every 3.5s, stopping after 2 minutes
   useEffect(() => {
@@ -91,7 +62,7 @@ export function DashboardScreen() {
   };
 
   const handleRemoveWishlist = (id: string) => {
-    setWishlist((prev) => prev.filter((i) => i.id !== id));
+    removeFromWishlist(id);
   };
 
   const handleOpenPolicy = (tab: PolicyTab) => {
@@ -282,7 +253,7 @@ export function DashboardScreen() {
                     {item.title}
                   </Text>
                   <Text style={styles.wishlistPrice}>₦{item.base_price.toLocaleString()}</Text>
-                  <Text style={styles.wishlistTag}>{item.tag}</Text>
+                  <Text style={styles.wishlistTag}>{item.tag || item.badge || 'Abeokuta Heritage'}</Text>
                 </View>
               </View>
 

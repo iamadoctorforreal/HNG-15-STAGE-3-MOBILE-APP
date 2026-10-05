@@ -1,30 +1,44 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   FlatList,
   Image,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { PRODUCTS, COLORS, MobileProduct, API_BASE_URL } from '../lib/constants';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import { HeroSection } from '../components/HeroSection';
 import { LeadMagnetModal } from '../components/LeadMagnetModal';
 import { ProductDetailModal } from '../components/ProductDetailModal';
 
+const MOBILE_CATEGORIES = [
+  { id: 'all', label: 'All (10)' },
+  { id: 'whole', label: 'Whole Catfish' },
+  { id: 'flakes', label: 'Flakes & Cuts' },
+  { id: 'bulk', label: 'Bulk Wholesale' },
+  { id: 'digital', label: 'Cookbook' },
+];
+
 export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [products, setProducts] = useState<MobileProduct[]>(PRODUCTS);
   const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [leadMagnetVisible, setLeadMagnetVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MobileProduct | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const fetchLiveProducts = useCallback(async () => {
     try {
@@ -70,8 +84,29 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
     }, 600);
   };
 
+  const displayedProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (selectedCategory !== 'all') {
+        if (selectedCategory === 'digital' && !p.is_digital) return false;
+        if (selectedCategory === 'bulk' && !p.slug.includes('bulk') && !p.title.toLowerCase().includes('bulk')) return false;
+        if (selectedCategory === 'flakes' && !p.slug.includes('flakes') && !p.slug.includes('cuts') && !p.slug.includes('steaks') && !p.title.toLowerCase().includes('flakes') && !p.title.toLowerCase().includes('cuts') && !p.title.toLowerCase().includes('steaks')) return false;
+        if (selectedCategory === 'whole' && (p.is_digital || p.slug.includes('bulk') || p.slug.includes('flakes') || p.slug.includes('cuts') || p.slug.includes('steaks'))) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const match =
+          p.title.toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q) ||
+          (p.badge || '').toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [products, selectedCategory, searchQuery]);
+
   const renderProduct = ({ item }: { item: MobileProduct }) => {
     const isAdding = addingId === item.id;
+    const favorited = isInWishlist(item.id);
 
     return (
       <TouchableOpacity
@@ -85,6 +120,15 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
           <View style={styles.badgeContainer}>
             <Text style={styles.badgeText}>{item.badge}</Text>
           </View>
+
+          {/* Wishlist Heart Toggle */}
+          <TouchableOpacity
+            style={[styles.heartBtn, favorited && styles.heartBtnActive]}
+            onPress={() => toggleWishlist(item)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.heartIcon}>{favorited ? '❤️' : '🤍'}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Product Details */}
@@ -122,7 +166,7 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={products}
+        data={displayedProducts}
         keyExtractor={(item) => item.id}
         renderItem={renderProduct}
         ListHeaderComponent={
@@ -147,6 +191,47 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
               >
                 <Text style={styles.leadMagnetBtnText}>📥 Download Free PDF Guide →</Text>
               </TouchableOpacity>
+            </View>
+
+            {/* Search Bar & Category Filter Section */}
+            <View style={styles.filterSection}>
+              <View style={styles.searchBar}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search catfish, cuts, flakes, cookbook..."
+                  placeholderTextColor="#9CA3AF"
+                />
+                {searchQuery ? (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
+                    <Text style={styles.searchClearText}>✕</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryScroll}
+              >
+                {MOBILE_CATEGORIES.map((cat) => {
+                  const isActive = selectedCategory === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                      onPress={() => setSelectedCategory(cat.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
           </View>
         }
@@ -341,6 +426,96 @@ const styles = StyleSheet.create({
   leadMagnetBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
+    fontWeight: '900',
+  },
+  heartBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+    zIndex: 10,
+  },
+  heartBtnActive: {
+    backgroundColor: '#FFF1F2',
+    borderColor: '#FECDD3',
+  },
+  heartIcon: {
+    fontSize: 16,
+  },
+  filterSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.textDark,
+    padding: 0,
+  },
+  searchClearBtn: {
+    padding: 4,
+  },
+  searchClearText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '700',
+  },
+  categoryScroll: {
+    paddingVertical: 2,
+    gap: 8,
+  },
+  categoryChip: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginRight: 8,
+  },
+  categoryChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  categoryChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  categoryChipTextActive: {
+    color: '#FFFFFF',
     fontWeight: '900',
   },
 });
