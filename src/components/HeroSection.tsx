@@ -20,6 +20,7 @@ export function HeroSection() {
 
     const stopTimer = setTimeout(() => {
       clearInterval(timer);
+      setGreetingIdx(0);
     }, 120000);
 
     return () => {

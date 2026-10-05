@@ -29,6 +29,7 @@ export function Header({
 
     const stopTimer = setTimeout(() => {
       clearInterval(timer);
+      setGreetingIdx(0); // Always stop on English
     }, 120000);
 
     return () => {

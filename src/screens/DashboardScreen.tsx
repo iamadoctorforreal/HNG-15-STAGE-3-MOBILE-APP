@@ -8,7 +8,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { COLORS, MobileProduct } from '../lib/constants';
+import { COLORS, MobileProduct, API_BASE_URL } from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -33,22 +33,47 @@ export function DashboardScreen() {
   const [leadMagnetOpen, setLeadMagnetOpen] = useState(false);
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [policyTab, setPolicyTab] = useState<PolicyTab>('about');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // Rotate greeting every 3.5s, stopping after 2 minutes
+  // Fetch live order history from API & rotate greeting
   useEffect(() => {
+    async function fetchOrders() {
+      if (!user) return;
+      try {
+        setOrdersLoading(true);
+        const res = await fetch(
+          `${API_BASE_URL}/api/orders?userId=${user.id}&email=${encodeURIComponent(user.email || '')}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.orders) {
+            setOrders(data.orders);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load user orders on mobile:', err);
+      } finally {
+        setOrdersLoading(false);
+      }
+    }
+
+    fetchOrders();
+
     const timer = setInterval(() => {
       setGreetingIdx((prev) => (prev + 1) % PROFILE_GREETINGS.length);
     }, 3500);
 
     const stopTimer = setTimeout(() => {
       clearInterval(timer);
+      setGreetingIdx(0); // Always stop on English
     }, 120000);
 
     return () => {
       clearInterval(timer);
       clearTimeout(stopTimer);
     };
-  }, []);
+  }, [user]);
 
   const firstName =
     user?.user_metadata?.first_name ||
@@ -285,44 +310,135 @@ export function DashboardScreen() {
       {/* 5. Order History Section */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>📋 Order History</Text>
+        <Text style={styles.sectionBadge}>
+          {orders.length} {orders.length === 1 ? 'ORDER' : 'ORDERS'}
+        </Text>
       </View>
 
-      <View style={styles.historyCard}>
-        <View style={styles.historyItem}>
-          <View style={styles.historyHeader}>
-            <View>
-              <Text style={styles.historyOrderNum}>Order #SW-784019</Text>
-              <Text style={styles.historyDate}>Delivered on Oct 02, 2026</Text>
-            </View>
-            <View style={styles.historyPill}>
-              <Text style={styles.historyPillText}>Delivered ✓</Text>
-            </View>
-          </View>
-          <Text style={styles.historySummary}>
-            2x Whole Round-Curled Dried Catfish (Big) • 1x Cookbook PDF
-          </Text>
-          <View style={styles.historyFooter}>
-            <Text style={styles.historyTotal}>₦22,500</Text>
-            <TouchableOpacity
-              style={styles.reorderBtn}
-              onPress={async () => {
-                await addToCart({
-                  id: '00000000-0000-0000-0000-000000000001',
-                  title: 'Whole Round-Curled Dried Catfish (Big)',
-                  slug: 'whole-round-curled-dried-catfish-big',
-                  base_price: 9500,
-                  image: 'https://shop.sawfywhite.com/images/catfish-round-curled.png',
-                  is_digital: false,
-                }, 2);
-                Alert.alert('Reorder Added! ⚡', 'Items from Order #SW-784019 added to your cart.');
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.reorderBtnText}>⚡ Reorder</Text>
-            </TouchableOpacity>
-          </View>
+      {ordersLoading ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>Loading your order history...</Text>
         </View>
-      </View>
+      ) : orders.length > 0 ? (
+        <View style={styles.historyCard}>
+          {orders.map((ord) => {
+            const itemsSummary =
+              ord.order_items?.map((it: any) => `${it.quantity}x ${it.product_title}`).join(' • ') ||
+              'Abeokuta Catfish Selection';
+            const dateStr = ord.created_at
+              ? new Date(ord.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
+              : 'Recent Order';
+            const isPaid = ord.status === 'paid' || ord.status === 'delivered';
+
+            return (
+              <View key={ord.id} style={styles.historyItem}>
+                <View style={styles.historyHeader}>
+                  <View>
+                    <Text style={styles.historyOrderNum}>
+                      Order #{ord.id.slice(0, 8).toUpperCase()}
+                    </Text>
+                    <Text style={styles.historyDate}>Placed on {dateStr}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.historyPill,
+                      { backgroundColor: isPaid ? '#E6F5ED' : '#FEF3C7' },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.historyPillText,
+                        { color: isPaid ? COLORS.primaryDark : '#92400E' },
+                      ]}
+                    >
+                      {ord.status?.toUpperCase() || 'PENDING'} {isPaid ? '✓' : '⏳'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.historySummary}>{itemsSummary}</Text>
+                <View style={styles.historyFooter}>
+                  <Text style={styles.historyTotal}>
+                    {ord.currency === 'USD' ? '$' : '₦'}
+                    {Number(ord.total_amount).toLocaleString()}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.reorderBtn}
+                    onPress={async () => {
+                      if (ord.order_items && ord.order_items.length > 0) {
+                        for (const it of ord.order_items) {
+                          await addToCart(
+                            {
+                              id: it.product_id,
+                              title: it.product_title,
+                              slug: 'dried-catfish',
+                              base_price: it.unit_price,
+                              image: 'https://shop.sawfywhite.com/images/catfish-round-curled.png',
+                              is_digital: !!it.is_digital,
+                            },
+                            it.quantity || 1
+                          );
+                        }
+                        Alert.alert('Reorder Added! ⚡', 'Items added to your cart.');
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.reorderBtnText}>⚡ Reorder</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={styles.historyCard}>
+          <View style={styles.historyItem}>
+            <View style={styles.historyHeader}>
+              <View>
+                <Text style={styles.historyOrderNum}>Sample Order #SW-784019</Text>
+                <Text style={styles.historyDate}>Delivered on Oct 02, 2026</Text>
+              </View>
+              <View style={styles.historyPill}>
+                <Text style={styles.historyPillText}>Delivered ✓</Text>
+              </View>
+            </View>
+            <Text style={styles.historySummary}>
+              2x Whole Round-Curled Dried Catfish (Big) • 1x Cookbook PDF
+            </Text>
+            <View style={styles.historyFooter}>
+              <Text style={styles.historyTotal}>₦22,500</Text>
+              <TouchableOpacity
+                style={styles.reorderBtn}
+                onPress={async () => {
+                  await addToCart(
+                    {
+                      id: '00000000-0000-0000-0000-000000000001',
+                      title: 'Whole Round-Curled Dried Catfish (Big)',
+                      slug: 'whole-round-curled-dried-catfish-big',
+                      base_price: 9500,
+                      image: 'https://shop.sawfywhite.com/images/catfish-round-curled.png',
+                      is_digital: false,
+                    },
+                    2
+                  );
+                  Alert.alert('Reorder Added! ⚡', 'Items from Order #SW-784019 added to your cart.');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.reorderBtnText}>⚡ Reorder</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text style={{ fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginTop: 10 }}>
+            Orders placed on Web or Mobile with this account will automatically sync and show here in real time.
+          </Text>
+        </View>
+      )}
+
 
       {/* 6. Lead Magnet Promotion Box */}
       <View style={styles.leadMagnetBox}>

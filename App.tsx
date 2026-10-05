@@ -37,7 +37,10 @@ function MainApp() {
       {/* Screen Views */}
       <View style={styles.content}>
         {activeTab === 'products' && (
-          <ProductsScreen onGoToCart={() => setActiveTab('cart')} />
+          <ProductsScreen
+            onGoToCart={() => setActiveTab('cart')}
+            onGoToDashboard={() => setActiveTab('account')}
+          />
         )}
         {activeTab === 'cart' && (
           <CartScreen

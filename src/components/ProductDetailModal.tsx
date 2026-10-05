@@ -17,6 +17,7 @@ interface ProductDetailModalProps {
   product: MobileProduct | null;
   onClose: () => void;
   onGoToCart?: () => void;
+  onBuyNow?: () => void;
 }
 
 export function ProductDetailModal({
@@ -24,6 +25,7 @@ export function ProductDetailModal({
   product,
   onClose,
   onGoToCart,
+  onBuyNow,
 }: ProductDetailModalProps) {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
@@ -38,6 +40,14 @@ export function ProductDetailModal({
     setTimeout(() => {
       setAdded(false);
     }, 1500);
+  };
+
+  const handleBuyNowProduct = async () => {
+    await addToCart(product, quantity);
+    onClose();
+    if (onBuyNow) {
+      onBuyNow();
+    }
   };
 
   const handleAddUpsell = async (upsell: {
@@ -188,16 +198,29 @@ export function ProductDetailModal({
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={[styles.addToCartBtn, added && styles.addToCartBtnSuccess]}
-                onPress={handleAddMainProduct}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.addToCartBtnText}>
-                  {added ? '✓ Added to Cart!' : `🛒 Add ${(quantity * product.base_price).toLocaleString()} ₦`}
-                </Text>
-              </TouchableOpacity>
+              <View style={{ flex: 1, flexDirection: 'row', gap: 8, marginLeft: 10 }}>
+                <TouchableOpacity
+                  style={[styles.addToCartBtn, added && styles.addToCartBtnSuccess, { flex: 1 }]}
+                  onPress={handleAddMainProduct}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.addToCartBtnText}>
+                    {added ? '✓ Added' : '🛒 Add'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.addToCartBtn, { flex: 1.2, backgroundColor: '#D4A843' }]}
+                  onPress={handleBuyNowProduct}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.addToCartBtnText, { color: '#1F2937' }]}>
+                    ⚡ Buy Now
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
+
           </View>
 
           {/* Upsells Section / Recommended Pairings */}

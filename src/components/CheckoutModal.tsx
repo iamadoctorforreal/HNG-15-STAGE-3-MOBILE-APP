@@ -10,10 +10,56 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { COLORS, API_BASE_URL } from '../lib/constants';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+
+export type PaymentMethodType =
+  | 'visa'
+  | 'mastercard'
+  | 'verve'
+  | 'bank_transfer'
+  | 'ussd'
+  | 'apple_pay'
+  | 'google_pay'
+  | 'paypal'
+  | 'amex';
+
+export const PAYMENT_OPTIONS: {
+  id: PaymentMethodType;
+  name: string;
+  icon: string;
+  sub: string;
+}[] = [
+  { id: 'visa', name: 'Visa', icon: '💳', sub: 'Pay with debit or credit card' },
+  { id: 'mastercard', name: 'Mastercard', icon: '💳', sub: 'Fast & secure Mastercard' },
+  { id: 'verve', name: 'Verve Card', icon: '💳', sub: 'Domestic Nigerian bank card' },
+  { id: 'bank_transfer', name: 'Bank Transfer', icon: '🏦', sub: 'Direct Nigerian bank transfer' },
+  { id: 'ussd', name: 'USSD / Mobile Money', icon: '📱', sub: 'Pay directly via USSD code' },
+  { id: 'apple_pay', name: 'Apple Pay', icon: '🍏', sub: 'Instant 1-tap Apple Pay' },
+  { id: 'google_pay', name: 'Google Pay', icon: '🌐', sub: 'Google Pay balance or cards' },
+  { id: 'paypal', name: 'PayPal', icon: '🅿️', sub: 'Global PayPal wallet or cards' },
+  { id: 'amex', name: 'American Express', icon: '💳', sub: 'International AMEX card' },
+];
+
+function routePaymentMethod(method: PaymentMethodType): 'paystack' | 'flutterwave' {
+  switch (method) {
+    case 'apple_pay':
+    case 'google_pay':
+    case 'paypal':
+    case 'amex':
+      return 'flutterwave';
+    case 'visa':
+    case 'mastercard':
+    case 'verve':
+    case 'bank_transfer':
+    case 'ussd':
+    default:
+      return 'paystack';
+  }
+}
 
 interface CheckoutModalProps {
   visible: boolean;
@@ -39,7 +85,7 @@ export function CheckoutModal({
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('Abeokuta');
   const [state, setState] = useState('Ogun State');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'apple_pay'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('visa');
 
   const [loading, setLoading] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<any>(null);
@@ -79,9 +125,10 @@ export function CheckoutModal({
           isDigital: !!i.is_digital,
         })),
         currency: 'NGN',
-        paymentMethod: paymentMethod === 'card' ? 'visa' : paymentMethod === 'apple_pay' ? 'apple_pay' : 'bank_transfer',
+        paymentMethod,
       };
 
+      // 1. Create order in database
       const res = await fetch(`${API_BASE_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,21 +136,72 @@ export function CheckoutModal({
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(data.error || 'Failed to submit order');
       }
 
-      // Order created successfully
+      const orderId = data.orderId || `ord-${Date.now().toString().slice(-6)}`;
       await clearCart();
+
+      // 2. Gateway Routing (Invisible to user) & Redirection
+      const provider = routePaymentMethod(paymentMethod);
+      let gatewayUrl = '';
+
+      try {
+        if (provider === 'paystack') {
+          const paystackRes = await fetch(`${API_BASE_URL}/api/checkout/paystack`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email.trim(),
+              amount: totalAmount,
+              orderId,
+            }),
+          });
+          const paystackData = await paystackRes.json();
+          if (paystackRes.ok && paystackData.authorization_url) {
+            gatewayUrl = paystackData.authorization_url;
+          }
+        } else {
+          // Flutterwave
+          const flwRes = await fetch(`${API_BASE_URL}/api/checkout/flutterwave`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email.trim(),
+              amount: totalAmount,
+              orderId,
+              customerName: fullName.trim(),
+              phone: phone.trim(),
+              currency: 'NGN',
+            }),
+          });
+          const flwData = await flwRes.json();
+          if (flwRes.ok && flwData.link) {
+            gatewayUrl = flwData.link;
+          }
+        }
+      } catch (gwErr) {
+        console.warn('Payment gateway initialization note:', gwErr);
+      }
+
       setConfirmedOrder({
-        orderId: data.orderId || `ord-${Date.now().toString().slice(-6)}`,
+        orderId,
         customerName: fullName.trim(),
         customerEmail: email.trim(),
         address: `${address.trim()}, ${city.trim()}, ${state.trim()}`,
         items: [...items],
         totalAmount,
+        gatewayUrl,
+        provider,
       });
+
+      // 3. Automatically launch gateway hosted page
+      if (gatewayUrl) {
+        Linking.openURL(gatewayUrl).catch((linkErr) => {
+          console.warn('Unable to open payment URL:', linkErr);
+        });
+      }
     } catch (err: any) {
       Alert.alert('Checkout Error', err?.message || 'Unable to place order. Please check network connection.');
     } finally {
@@ -232,6 +330,21 @@ export function CheckoutModal({
               <Text style={styles.trackingDesc}>
                 You can track the preparation, smoke drying, and courier dispatch of this order in real time on your Customer Dashboard.
               </Text>
+              {confirmedOrder.gatewayUrl ? (
+                <TouchableOpacity
+                  style={[styles.trackDashboardBtn, { backgroundColor: COLORS.primaryDark, marginBottom: 10 }]}
+                  onPress={() => {
+                    Linking.openURL(confirmedOrder.gatewayUrl).catch((err) =>
+                      console.warn('Could not re-open gateway URL:', err)
+                    );
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.trackDashboardBtnText}>
+                    💳 Complete Payment on {confirmedOrder.provider === 'paystack' ? 'Paystack' : 'Flutterwave'} &rarr;
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity
                 style={styles.trackDashboardBtn}
                 onPress={handleFinishAndTrack}
@@ -325,46 +438,26 @@ export function CheckoutModal({
             </View>
 
             {/* Payment Method Selector */}
-            <Text style={styles.sectionTitle}>2. Payment Method</Text>
+            <Text style={styles.sectionTitle}>2. Payment Method (Select Any)</Text>
 
-            <TouchableOpacity
-              style={[styles.paymentMethodCard, paymentMethod === 'card' && styles.paymentMethodCardSelected]}
-              onPress={() => setPaymentMethod('card')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.methodIcon}>💳</Text>
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.methodName}>Debit / Credit Card</Text>
-                <Text style={styles.methodSub}>Visa, Mastercard, Verve</Text>
-              </View>
-              {paymentMethod === 'card' && <Text style={styles.selectedCheck}>✓</Text>}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.paymentMethodCard, paymentMethod === 'bank_transfer' && styles.paymentMethodCardSelected]}
-              onPress={() => setPaymentMethod('bank_transfer')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.methodIcon}>🏦</Text>
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.methodName}>Bank Transfer / USSD</Text>
-                <Text style={styles.methodSub}>Direct Nigerian Bank Transfer</Text>
-              </View>
-              {paymentMethod === 'bank_transfer' && <Text style={styles.selectedCheck}>✓</Text>}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.paymentMethodCard, paymentMethod === 'apple_pay' && styles.paymentMethodCardSelected]}
-              onPress={() => setPaymentMethod('apple_pay')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.methodIcon}>🍎</Text>
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.methodName}>Apple Pay / International</Text>
-                <Text style={styles.methodSub}>UK, US & Global cards</Text>
-              </View>
-              {paymentMethod === 'apple_pay' && <Text style={styles.selectedCheck}>✓</Text>}
-            </TouchableOpacity>
+            {PAYMENT_OPTIONS.map((opt) => {
+              const isSelected = paymentMethod === opt.id;
+              return (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={[styles.paymentMethodCard, isSelected && styles.paymentMethodCardSelected]}
+                  onPress={() => setPaymentMethod(opt.id)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.methodIcon}>{opt.icon}</Text>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.methodName}>{opt.name}</Text>
+                    <Text style={styles.methodSub}>{opt.sub}</Text>
+                  </View>
+                  {isSelected && <Text style={styles.selectedCheck}>✓</Text>}
+                </TouchableOpacity>
+              );
+            })}
 
             {/* Order Price Summary */}
             <View style={styles.orderSummaryCard}>
@@ -395,10 +488,11 @@ export function CheckoutModal({
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.submitOrderBtnText}>
-                  Place Order & Receive Invoice &bull; ₦{totalAmount.toLocaleString()}
+                  Pay with {routePaymentMethod(paymentMethod) === 'paystack' ? 'Paystack' : 'Flutterwave'} &bull; ₦{totalAmount.toLocaleString()}
                 </Text>
               )}
             </TouchableOpacity>
+
 
             <Text style={styles.footerNotice}>
               🔒 Secure 256-bit SSL encrypted checkout. Invoice and live tracking sent immediately.

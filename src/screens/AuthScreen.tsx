@@ -33,6 +33,7 @@ function RotatingSuccessTitle({ name }: { name: string }) {
 
     const stopTimer = setTimeout(() => {
       clearInterval(timer);
+      setIndex(0); // Always stop on English
     }, 120000);
 
     return () => {
@@ -75,6 +76,7 @@ function RotatingProfileGreeting({ name }: { name: string }) {
 
     const stopTimer = setTimeout(() => {
       clearInterval(timer);
+      setIndex(0); // Always stop on English
     }, 120000);
 
     return () => {

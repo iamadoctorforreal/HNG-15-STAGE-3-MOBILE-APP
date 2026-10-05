@@ -112,7 +112,7 @@ export function PolicyModal({
               <Text style={styles.paragraph}>
                 • Shipped via DHL Express & African Cargo partners.{'\n'}
                 • Average transit: 3 to 5 business days with live doorstep tracking.{'\n'}
-                • Vacuum-sealed in commercial airtight food pouches with 90+ days shelf stability at room temperature.
+                • Vacuum-sealed in commercial airtight food pouches with 6 months shelf stability at room temperature.
               </Text>
             </View>
           )}

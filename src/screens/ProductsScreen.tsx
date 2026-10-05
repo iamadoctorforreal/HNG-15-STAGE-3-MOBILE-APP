@@ -19,6 +19,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { HeroSection } from '../components/HeroSection';
 import { LeadMagnetModal } from '../components/LeadMagnetModal';
 import { ProductDetailModal } from '../components/ProductDetailModal';
+import { CheckoutModal } from '../components/CheckoutModal';
 
 const MOBILE_CATEGORIES = [
   { id: 'all', label: 'All (10)' },
@@ -28,7 +29,13 @@ const MOBILE_CATEGORIES = [
   { id: 'digital', label: 'Cookbook' },
 ];
 
-export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
+export function ProductsScreen({
+  onGoToCart,
+  onGoToDashboard,
+}: {
+  onGoToCart?: () => void;
+  onGoToDashboard?: () => void;
+}) {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -37,6 +44,7 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [leadMagnetVisible, setLeadMagnetVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MobileProduct | null>(null);
+  const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -82,6 +90,11 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
     setTimeout(() => {
       setAddingId(null);
     }, 600);
+  };
+
+  const handleBuyNow = async (product: MobileProduct) => {
+    await addToCart(product, 1);
+    setCheckoutVisible(true);
   };
 
   const displayedProducts = useMemo(() => {
@@ -148,15 +161,25 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
               <Text style={styles.price}>₦{item.base_price.toLocaleString()}</Text>
             </View>
 
-            <TouchableOpacity
-              style={[styles.addButton, isAdding && styles.addButtonSuccess]}
-              onPress={() => handleAdd(item)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.addButtonText}>
-                {isAdding ? '✓ Added' : '🛒 Add to Cart'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.actionButtonsRow}>
+              <TouchableOpacity
+                style={[styles.addButton, isAdding && styles.addButtonSuccess]}
+                onPress={() => handleAdd(item)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.addButtonText, isAdding && { color: '#FFFFFF' }]}>
+                  {isAdding ? '✓ Added' : '🛒 Add'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.buyNowBtn}
+                onPress={() => handleBuyNow(item)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.buyNowBtnText}>⚡ Buy Now</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -261,8 +284,21 @@ export function ProductsScreen({ onGoToCart }: { onGoToCart?: () => void }) {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onGoToCart={onGoToCart}
+        onBuyNow={() => {
+          setSelectedProduct(null);
+          setCheckoutVisible(true);
+        }}
+      />
+
+      {/* Direct Quick Checkout Modal */}
+      <CheckoutModal
+        visible={checkoutVisible}
+        onClose={() => setCheckoutVisible(false)}
+        onGoToDashboard={onGoToDashboard || onGoToCart || (() => {})}
+        onGoToShop={() => setCheckoutVisible(false)}
       />
     </SafeAreaView>
+
   );
 }
 
@@ -352,24 +388,43 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.primaryDark,
   },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   addButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    borderRadius: 12,
   },
   addButtonSuccess: {
     backgroundColor: '#005230',
+    borderColor: '#005230',
   },
   addButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.textDark,
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 11,
+  },
+  buyNowBtn: {
+    backgroundColor: '#D4A843',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+    shadowColor: '#D4A843',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  buyNowBtnText: {
+    color: '#1F2937',
+    fontWeight: '900',
+    fontSize: 11,
   },
   leadMagnetBanner: {
     backgroundColor: '#FAF5EA',
