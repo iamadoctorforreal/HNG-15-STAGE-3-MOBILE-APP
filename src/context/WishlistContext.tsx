@@ -48,7 +48,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/wishlist`, { headers });
+      const q = new URLSearchParams();
+      if (user?.id) q.set('userId', user.id);
+      if (user?.email) q.set('email', user.email);
+      const url = q.toString()
+        ? `${API_BASE_URL}/api/wishlist?${q.toString()}`
+        : `${API_BASE_URL}/api/wishlist`;
+
+      const res = await fetch(url, { headers });
       if (res.ok) {
         const data = await res.json();
         if (data.items && Array.isArray(data.items)) {
@@ -59,7 +66,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.warn('Mobile wishlist refresh warning:', e);
     }
-  }, [session]);
+  }, [session, user]);
 
   useEffect(() => {
     AsyncStorage.getItem('sawfy_mobile_wishlist').then((cached) => {
@@ -107,7 +114,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         await fetch(`${API_BASE_URL}/api/wishlist`, {
           method: 'DELETE',
           headers,
-          body: JSON.stringify({ productId: product.id }),
+          body: JSON.stringify({
+            productId: product.id,
+            userId: user?.id,
+            email: user?.email,
+          }),
         });
         broadcastSync();
       } catch (_) {}
@@ -128,7 +139,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         await fetch(`${API_BASE_URL}/api/wishlist`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ product: newItem }),
+          body: JSON.stringify({
+            product: newItem,
+            userId: user?.id,
+            email: user?.email,
+          }),
         });
         broadcastSync();
       } catch (_) {}
@@ -145,11 +160,16 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       await fetch(`${API_BASE_URL}/api/wishlist`, {
         method: 'DELETE',
         headers,
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({
+          productId,
+          userId: user?.id,
+          email: user?.email,
+        }),
       });
       broadcastSync();
     } catch (_) {}
   };
+
 
   return (
     <WishlistContext.Provider

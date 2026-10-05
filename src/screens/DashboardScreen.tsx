@@ -271,7 +271,11 @@ export function DashboardScreen() {
             <View key={item.id} style={styles.wishlistItem}>
               <View style={styles.wishlistLeft}>
                 <View style={styles.wishlistThumbBox}>
-                  <Text style={{ fontSize: 24 }}>🐟</Text>
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.wishlistThumbImg} resizeMode="cover" />
+                  ) : (
+                    <Text style={{ fontSize: 24 }}>🐟</Text>
+                  )}
                 </View>
                 <View style={styles.wishlistInfo}>
                   <Text style={styles.wishlistTitle} numberOfLines={1}>
@@ -885,6 +889,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderWidth: 1,
     borderColor: '#F0EDE8',
+    overflow: 'hidden',
+  },
+  wishlistThumbImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 9,
   },
   wishlistInfo: {
     flex: 1,
