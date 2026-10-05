@@ -32,9 +32,11 @@ const MOBILE_CATEGORIES = [
 export function ProductsScreen({
   onGoToCart,
   onGoToDashboard,
+  showHero = true,
 }: {
   onGoToCart?: () => void;
   onGoToDashboard?: () => void;
+  showHero?: boolean;
 }) {
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -194,29 +196,7 @@ export function ProductsScreen({
         renderItem={renderProduct}
         ListHeaderComponent={
           <View>
-            <HeroSection />
-
-            {/* Lead Magnet Free Guide Banner */}
-            <View style={styles.leadMagnetBanner}>
-              <View style={styles.leadMagnetBadge}>
-                <Text style={styles.leadMagnetBadgeText}>FREE GIFT 📖</Text>
-              </View>
-              <Text style={styles.leadMagnetTitle}>
-                The 7 Hidden Health Benefits of Dried Catfish
-              </Text>
-              <Text style={styles.leadMagnetSubtitle}>
-                Discover protein density, heart-healthy Omega-3s, and traditional cooking secrets from Abeokuta.
-              </Text>
-              <TouchableOpacity
-                style={styles.leadMagnetBtn}
-                onPress={() => setLeadMagnetVisible(true)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.leadMagnetBtnText}>📥 Download Free PDF Guide →</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Search Bar & Category Filter Section */}
+            {/* 1. Unmissable Quick Search Bar & Category Filters (Always at top) */}
             <View style={styles.filterSection}>
               <View style={styles.searchBar}>
                 <Text style={styles.searchIcon}>🔍</Text>
@@ -224,7 +204,7 @@ export function ProductsScreen({
                   style={styles.searchInput}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  placeholder="Search catfish, cuts, flakes, cookbook..."
+                  placeholder="Search dried catfish, soup cuts, flakes, cookbook..."
                   placeholderTextColor="#9CA3AF"
                 />
                 {searchQuery ? (
@@ -256,6 +236,33 @@ export function ProductsScreen({
                 })}
               </ScrollView>
             </View>
+
+            {/* 2. Hero Section & Free Guide (Shown on Home view when not searching) */}
+            {showHero && !searchQuery ? (
+              <>
+                <HeroSection />
+
+                {/* Lead Magnet Free Guide Banner */}
+                <View style={styles.leadMagnetBanner}>
+                  <View style={styles.leadMagnetBadge}>
+                    <Text style={styles.leadMagnetBadgeText}>FREE GIFT 📖</Text>
+                  </View>
+                  <Text style={styles.leadMagnetTitle}>
+                    The 7 Hidden Health Benefits of Dried Catfish
+                  </Text>
+                  <Text style={styles.leadMagnetSubtitle}>
+                    Discover protein density, heart-healthy Omega-3s, and traditional cooking secrets from Abeokuta.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.leadMagnetBtn}
+                    onPress={() => setLeadMagnetVisible(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.leadMagnetBtnText}>📥 Download Free PDF Guide →</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : null}
           </View>
         }
         contentContainerStyle={styles.listContent}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider, useCart } from './src/context/CartContext';
@@ -13,7 +13,7 @@ import { SplashScreen } from './src/components/SplashScreen';
 import { COLORS } from './src/lib/constants';
 
 function MainApp() {
-  const [activeTab, setActiveTab] = useState<'products' | 'cart' | 'account'>('products');
+  const [activeTab, setActiveTab] = useState<'home' | 'products' | 'cart' | 'account'>('home');
   const [showSplash, setShowSplash] = useState(true);
   const { totalItems } = useCart();
   const { user } = useAuth();
@@ -31,13 +31,21 @@ function MainApp() {
       {/* Brand Header */}
       <Header
         onGoToAccount={() => setActiveTab('account')}
-        onGoToHome={() => setActiveTab('products')}
+        onGoToHome={() => setActiveTab('home')}
       />
 
       {/* Screen Views */}
       <View style={styles.content}>
+        {activeTab === 'home' && (
+          <ProductsScreen
+            showHero={true}
+            onGoToCart={() => setActiveTab('cart')}
+            onGoToDashboard={() => setActiveTab('account')}
+          />
+        )}
         {activeTab === 'products' && (
           <ProductsScreen
+            showHero={false}
             onGoToCart={() => setActiveTab('cart')}
             onGoToDashboard={() => setActiveTab('account')}
           />
@@ -49,7 +57,7 @@ function MainApp() {
           />
         )}
         {activeTab === 'account' && (
-          <AuthScreen onLoginSuccess={() => setActiveTab('products')} />
+          <AuthScreen onLoginSuccess={() => setActiveTab('home')} />
         )}
       </View>
 
@@ -58,13 +66,25 @@ function MainApp() {
         <View style={styles.tabBar}>
           {/* Home Tab */}
           <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'home' && styles.tabButtonActive]}
+            onPress={() => setActiveTab('home')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.tabIcon}>🏠</Text>
+            <Text style={[styles.tabLabel, activeTab === 'home' && styles.tabLabelActive]}>
+              Home
+            </Text>
+          </TouchableOpacity>
+
+          {/* Dedicated Products Tab */}
+          <TouchableOpacity
             style={[styles.tabButton, activeTab === 'products' && styles.tabButtonActive]}
             onPress={() => setActiveTab('products')}
             activeOpacity={0.7}
           >
-            <Text style={styles.tabIcon}>🏠</Text>
+            <Text style={styles.tabIcon}>🐟</Text>
             <Text style={[styles.tabLabel, activeTab === 'products' && styles.tabLabelActive]}>
-              Home
+              Products
             </Text>
           </TouchableOpacity>
 
@@ -128,13 +148,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBg,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+    paddingBottom: Platform.OS === 'android' ? 24 : 6,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   tabBar: {
     flexDirection: 'row',
-    height: 60,
+    height: Platform.OS === 'android' ? 62 : 58,
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   tabButton: {
     flex: 1,
