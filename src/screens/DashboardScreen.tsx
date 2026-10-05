@@ -24,6 +24,8 @@ const PROFILE_GREETINGS = [
   'Nnọọ ọzọ',
 ];
 
+const BACKEND_URL = typeof API_BASE_URL !== 'undefined' && API_BASE_URL ? API_BASE_URL : 'https://shop.sawfywhite.com';
+
 export function DashboardScreen() {
   const { user, signOut } = useAuth();
   const { addToCart, refreshCart } = useCart();
@@ -43,7 +45,7 @@ export function DashboardScreen() {
       try {
         setOrdersLoading(true);
         const res = await fetch(
-          `${API_BASE_URL}/api/orders?userId=${user.id}&email=${encodeURIComponent(user.email || '')}`
+          `${BACKEND_URL}/api/orders?userId=${user.id}&email=${encodeURIComponent(user.email || '')}`
         );
         if (res.ok) {
           const data = await res.json();
