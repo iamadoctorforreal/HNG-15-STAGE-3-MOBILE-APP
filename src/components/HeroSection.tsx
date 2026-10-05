@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import { COLORS } from '../lib/constants';
 
 const GREETINGS = [
-  'Ẹ kú àbọ̀! Premium dried catfish from Abeokuta to the world 🇳🇬',
   'Welcome! Export-grade catfish shipped to Nigeria, UK & USA ✈️',
-  'Barka da zuwa! Kifin busasshe mai inganci daga Abeokuta 🇳🇬',
-  'Nnọọ! Azụ kpọrọ nkụ kacha mma si Abeokuta ruo tebụl gị 🇳🇬',
   'Bienvenue! Poisson-chat séché d\'Abeokuta qualité export 🌍',
+  'Barka da zuwa! Kifin busasshe mai inganci daga Abeokuta 🇳🇬',
+  'Ẹ kú àbọ̀! Premium dried catfish from Abeokuta to the world 🇳🇬',
+  'Nnọọ! Azụ kpọrọ nkụ kacha mma si Abeokuta ruo tebụl gị 🇳🇬',
 ];
 
 export function HeroSection() {
@@ -17,7 +17,15 @@ export function HeroSection() {
     const timer = setInterval(() => {
       setGreetingIdx((prev) => (prev + 1) % GREETINGS.length);
     }, 4000);
-    return () => clearInterval(timer);
+
+    const stopTimer = setTimeout(() => {
+      clearInterval(timer);
+    }, 120000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(stopTimer);
+    };
   }, []);
 
   return (

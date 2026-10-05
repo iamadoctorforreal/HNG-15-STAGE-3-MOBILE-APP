@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,81 @@ import { COLORS } from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { BrandLogo } from '../components/BrandLogo';
+
+const SUCCESS_GREETINGS = [
+  { lang: 'English', getHeading: (name: string) => `Congratulations, ${name}!` },
+  { lang: 'Français', getHeading: (name: string) => `Félicitations, ${name}!` },
+  { lang: 'Hausa', getHeading: (name: string) => `Barka, ${name}!` },
+  { lang: 'Yorùbá', getHeading: (name: string) => `Ẹ kú oríire, ${name}!` },
+  { lang: 'Igbo', getHeading: (name: string) => `Ekele, ${name}!` },
+];
+
+function RotatingSuccessTitle({ name }: { name: string }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % SUCCESS_GREETINGS.length);
+    }, 3500);
+
+    const stopTimer = setTimeout(() => {
+      clearInterval(timer);
+    }, 120000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(stopTimer);
+    };
+  }, []);
+
+  const current = SUCCESS_GREETINGS[index];
+
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <View style={{ backgroundColor: '#E6F5ED', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, marginBottom: 8 }}>
+        <Text style={{ fontSize: 10, fontWeight: '800', color: COLORS.primaryDark }}>
+          {current.lang}
+        </Text>
+      </View>
+      <Text style={styles.successTitle}>
+        {current.getHeading(name)}
+      </Text>
+    </View>
+  );
+}
+
+const PROFILE_GREETINGS = [
+  'Welcome back',
+  'Bon retour',
+  'Barka da dawowa',
+  'Ẹ kú àbọ̀',
+  'Nnọọ ọzọ',
+];
+
+function RotatingProfileGreeting({ name }: { name: string }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % PROFILE_GREETINGS.length);
+    }, 3500);
+
+    const stopTimer = setTimeout(() => {
+      clearInterval(timer);
+    }, 120000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(stopTimer);
+    };
+  }, []);
+
+  return (
+    <Text style={styles.welcomeGreeting}>
+      {PROFILE_GREETINGS[index]}, <Text style={{ color: COLORS.primary }}>{name}</Text>!
+    </Text>
+  );
+}
 
 export function AuthScreen() {
   const { user, signIn, signUp, signInWithGoogle, signOut, isLoading } = useAuth();
@@ -96,9 +171,7 @@ export function AuthScreen() {
             </Text>
           </View>
 
-          <Text style={styles.welcomeGreeting}>
-            Welcome back, <Text style={{ color: COLORS.primary }}>{firstName || 'Customer'}</Text>!
-          </Text>
+          <RotatingProfileGreeting name={firstName || 'Customer'} />
           <Text style={styles.userEmail}>{user.email}</Text>
 
           <View style={styles.statusBadge}>
@@ -140,9 +213,7 @@ export function AuthScreen() {
             <Text style={styles.successBadgeText}>🎉 Registration Successful</Text>
           </View>
 
-          <Text style={styles.successTitle}>
-            Ẹ kú oríire, {registrationSuccess.name}!
-          </Text>
+          <RotatingSuccessTitle name={registrationSuccess.name} />
 
           <Text style={styles.successSubtitle}>
             Your Sawfy White account has been created and activated. A personalized welcome confirmation has also been dispatched to:

@@ -1,11 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../lib/constants';
 import { BrandLogo } from './BrandLogo';
 import { useAuth } from '../context/AuthContext';
 
+const HEADER_GREETINGS = [
+  '👋 Welcome',
+  '👋 Bienvenue',
+  '👋 Barka da zuwa',
+  '👋 Ẹ kú àbọ̀',
+  '👋 Nnọọ',
+];
+
 export function Header() {
   const { user } = useAuth();
+  const [greetingIdx, setGreetingIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setGreetingIdx((prev) => (prev + 1) % HEADER_GREETINGS.length);
+    }, 3500);
+
+    const stopTimer = setTimeout(() => {
+      clearInterval(timer);
+    }, 120000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(stopTimer);
+    };
+  }, []);
+
   const firstName =
     user?.user_metadata?.first_name ||
     user?.user_metadata?.full_name?.split(' ')[0] ||
@@ -20,7 +45,7 @@ export function Header() {
           {user ? (
             <View style={styles.userBadge}>
               <Text style={styles.userBadgeText}>
-                👋 Welcome, <Text style={styles.userBadgeBold}>{firstName}</Text>!
+                {HEADER_GREETINGS[greetingIdx]}, <Text style={styles.userBadgeBold}>{firstName || 'Customer'}</Text>!
               </Text>
             </View>
           ) : (
