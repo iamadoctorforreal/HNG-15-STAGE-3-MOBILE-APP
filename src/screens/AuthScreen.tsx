@@ -8,13 +8,15 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { COLORS } from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { BrandLogo } from '../components/BrandLogo';
 
 export function AuthScreen() {
-  const { user, signIn, signUp, signOut, isLoading } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, signOut, isLoading } = useAuth();
   const { refreshCart } = useCart();
 
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -45,11 +47,23 @@ export function AuthScreen() {
         setErrorMsg(error.message || 'Registration failed.');
       } else {
         Alert.alert(
-          'Account Created',
-          'Welcome to Sawfy White Enterprises! Your account is now active.'
+          'Account Created & Active',
+          'Welcome to Sawfy White Enterprises! We also sent a welcome email to your inbox.'
         );
         refreshCart();
       }
+    }
+    setSubmitting(false);
+  };
+
+  const handleGoogleAuth = async () => {
+    setErrorMsg('');
+    setSubmitting(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setErrorMsg(error.message || 'Google Sign-In failed.');
+    } else {
+      refreshCart();
     }
     setSubmitting(false);
   };
@@ -63,6 +77,8 @@ export function AuthScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.profileCard}>
+          <BrandLogo size="md" showText={false} />
+
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
               {(user.email?.[0] || 'U').toUpperCase()}
@@ -76,9 +92,9 @@ export function AuthScreen() {
           </View>
 
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Cross-Platform Synchronization</Text>
+            <Text style={styles.infoTitle}>Cross-Platform Synchronization Active</Text>
             <Text style={styles.infoText}>
-              You are logged in with the exact same account as the web storefront. Any items added to your cart here or on shop.sawfywhite.com sync in real-time.
+              You are authenticated with the exact same account as the web storefront. Any items added to your cart here or on shop.sawfywhite.com sync in real-time.
             </Text>
           </View>
 
@@ -96,87 +112,114 @@ export function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.headerTitle}>
-          {isLoginMode ? 'Welcome Back' : 'Create an Account'}
-        </Text>
-        <Text style={styles.headerSubtitle}>
-          {isLoginMode
-            ? 'Sign in with your Sawfy White web credentials'
-            : 'Register to synchronize your cart across devices'}
-        </Text>
-
-        {errorMsg ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{errorMsg}</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.card}>
+          {/* Brand Logo Header */}
+          <View style={styles.logoHeader}>
+            <BrandLogo size="md" showText={true} />
           </View>
-        ) : null}
 
-        {!isLoginMode && (
+          <Text style={styles.headerTitle}>
+            {isLoginMode ? 'Welcome Back' : 'Create an Account'}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {isLoginMode
+              ? 'Sign in with your Sawfy White web credentials'
+              : 'Register to synchronize your cart across web and mobile'}
+          </Text>
+
+          {errorMsg ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{errorMsg}</Text>
+            </View>
+          ) : null}
+
+          {/* Google Sign-In Button */}
+          <TouchableOpacity
+            style={styles.googleBtn}
+            onPress={handleGoogleAuth}
+            disabled={submitting || isLoading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.googleIconText}>G</Text>
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or continue with email</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {!isLoginMode && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Full Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Babatunde Adeleke"
+                placeholderTextColor="#999999"
+                value={fullName}
+                onChangeText={setFullName}
+                autoCapitalize="words"
+              />
+            </View>
+          )}
+
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Full Name</Text>
+            <Text style={styles.inputLabel}>Email Address</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Adebayo Johnson"
-              value={fullName}
-              onChangeText={setFullName}
-              autoCapitalize="words"
+              placeholder="you@domain.com"
+              placeholderTextColor="#999999"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
           </View>
-        )}
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Email Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@domain.com"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Password (min. 6 characters)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor="#999999"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </View>
+          <TouchableOpacity
+            style={styles.submitBtn}
+            onPress={handleSubmit}
+            disabled={submitting || isLoading}
+            activeOpacity={0.85}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.submitBtnText}>
+                {isLoginMode ? 'Sign In →' : 'Create Account & Sign In →'}
+              </Text>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.submitBtn}
-          onPress={handleSubmit}
-          disabled={submitting || isLoading}
-          activeOpacity={0.85}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <Text style={styles.submitBtnText}>
-              {isLoginMode ? 'Sign In to Account' : 'Register Account'}
+          <TouchableOpacity
+            style={styles.toggleBtn}
+            onPress={() => {
+              setErrorMsg('');
+              setIsLoginMode(!isLoginMode);
+            }}
+          >
+            <Text style={styles.toggleText}>
+              {isLoginMode
+                ? "Don't have an account yet? Create one"
+                : 'Already have an account? Sign In'}
             </Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.toggleBtn}
-          onPress={() => {
-            setErrorMsg('');
-            setIsLoginMode(!isLoginMode);
-          }}
-        >
-          <Text style={styles.toggleText}>
-            {isLoginMode
-              ? "Don't have an account yet? Create one"
-              : 'Already have an account? Sign In'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -185,47 +228,98 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.cream,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 16,
+    paddingVertical: 32,
   },
   card: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    elevation: 3,
+    borderColor: 'rgba(0, 135, 81, 0.15)',
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowRadius: 8,
+  },
+  logoHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: COLORS.primaryDark,
+    color: COLORS.textDark,
     textAlign: 'center',
+    letterSpacing: -0.4,
   },
   headerSubtitle: {
     fontSize: 12,
     color: COLORS.textMuted,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 20,
-    lineHeight: 16,
+    lineHeight: 18,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  googleIconText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#4285F4',
+  },
+  googleBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 18,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   errorBox: {
     backgroundColor: '#FEE2E2',
-    padding: 10,
+    padding: 12,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#FCA5A5',
   },
   errorText: {
-    color: '#B91C1C',
+    color: '#991B1B',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
   },
   inputGroup: {
@@ -233,34 +327,36 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.textDark,
     marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
+    paddingVertical: 11,
+    fontSize: 13,
     color: COLORS.textDark,
+    backgroundColor: '#FAFAFA',
   },
   submitBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 10,
-    elevation: 2,
+    marginTop: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 13,
+    fontWeight: '800',
   },
   toggleBtn: {
     marginTop: 16,
@@ -273,61 +369,65 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     backgroundColor: COLORS.cardBg,
+    margin: 16,
     borderRadius: 24,
-    padding: 28,
+    padding: 24,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
-    elevation: 2,
+    elevation: 3,
   },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#E6F5ED',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginVertical: 14,
+    borderWidth: 2,
+    borderColor: '#B3E0C9',
   },
   avatarText: {
-    color: '#FFFFFF',
     fontSize: 26,
     fontWeight: '900',
+    color: COLORS.primary,
   },
   userEmail: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '800',
     color: COLORS.textDark,
+    marginBottom: 6,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     gap: 6,
-    backgroundColor: '#E6F5ED',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginTop: 8,
+    marginBottom: 20,
   },
   statusDot: {
-    width: 7,
-    height: 7,
+    width: 8,
+    height: 8,
     borderRadius: 4,
     backgroundColor: '#10B981',
   },
   statusText: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.primaryDark,
+    color: '#065F46',
   },
   infoBox: {
     backgroundColor: '#FAF8F5',
-    padding: 14,
+    padding: 16,
     borderRadius: 16,
-    marginTop: 20,
     width: '100%',
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F0EDE8',
   },
   infoTitle: {
     fontSize: 12,
@@ -341,18 +441,16 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   signOutBtn: {
-    marginTop: 24,
+    backgroundColor: '#FEE2E2',
     paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: COLORS.danger,
-    width: '100%',
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   signOutText: {
-    color: COLORS.danger,
-    fontSize: 13,
+    color: '#DC2626',
     fontWeight: '800',
+    fontSize: 12,
   },
 });

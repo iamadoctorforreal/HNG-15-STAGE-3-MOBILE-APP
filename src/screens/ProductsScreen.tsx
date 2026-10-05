@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,53 @@ import {
   StyleSheet,
   SafeAreaView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
-import { PRODUCTS, COLORS, MobileProduct } from '../lib/constants';
+import { PRODUCTS, COLORS, MobileProduct, API_BASE_URL } from '../lib/constants';
 import { useCart } from '../context/CartContext';
+import { HeroSection } from '../components/HeroSection';
 
 export function ProductsScreen() {
   const { addToCart } = useCart();
+  const [products, setProducts] = useState<MobileProduct[]>(PRODUCTS);
+  const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
+
+  const fetchLiveProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/api/products`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+          // Normalize to MobileProduct format
+          const mapped: MobileProduct[] = data.products.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            slug: p.slug,
+            description: p.description || '',
+            base_price: Number(p.base_price) || 0,
+            currency: p.currency || 'NGN',
+            badge: p.badge || (p.is_digital ? 'Digital Product' : 'Export Grade'),
+            weightInfo: p.weightInfo || 'Abeokuta Farm Pack',
+            image: p.images?.[0]
+              ? (p.images[0].startsWith('http') ? p.images[0] : `${API_BASE_URL}${p.images[0]}`)
+              : `${API_BASE_URL}/images/catfish-real-glass-plate.png`,
+            is_digital: !!p.is_digital,
+          }));
+          setProducts(mapped);
+        }
+      }
+    } catch (e) {
+      console.warn('Using offline product cache:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLiveProducts();
+  }, [fetchLiveProducts]);
 
   const handleAdd = async (product: MobileProduct) => {
     setAddingId(product.id);
@@ -71,17 +111,21 @@ export function ProductsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerBanner}>
-        <Text style={styles.bannerSubtitle}>FARMS OF ABEOKUTA, OGUN STATE</Text>
-        <Text style={styles.bannerTitle}>10 Curated Dried Catfish Selections</Text>
-      </View>
-
       <FlatList
-        data={PRODUCTS}
+        data={products}
         keyExtractor={(item) => item.id}
         renderItem={renderProduct}
+        ListHeaderComponent={<HeroSection />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={fetchLiveProducts}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       />
     </SafeAreaView>
   );
@@ -92,45 +136,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.cream,
   },
-  headerBanner: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: COLORS.cardBg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  bannerSubtitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 1,
-  },
-  bannerTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: COLORS.textDark,
-    marginTop: 2,
-  },
   listContent: {
-    padding: 16,
-    gap: 16,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: COLORS.cardBg,
+    marginHorizontal: 14,
+    marginBottom: 16,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.border,
-    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 3,
   },
   imageContainer: {
-    height: 180,
     width: '100%',
-    backgroundColor: '#F3F4F6',
+    height: 190,
+    backgroundColor: '#F0EDE8',
     position: 'relative',
   },
   image: {
@@ -139,49 +165,47 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 82, 48, 0.9)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   badgeText: {
+    color: '#FFF8E7',
     fontSize: 10,
     fontWeight: '800',
-    color: COLORS.primaryDark,
   },
   details: {
     padding: 16,
   },
   title: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: COLORS.textDark,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   weightInfo: {
     fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.primary,
+    fontWeight: '700',
+    color: COLORS.secondary,
     marginTop: 4,
   },
   description: {
     fontSize: 12,
     color: COLORS.textMuted,
-    lineHeight: 17,
+    lineHeight: 18,
     marginTop: 6,
   },
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 14,
+    marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F0EDE8',
   },
   priceLabel: {
     fontSize: 10,
@@ -189,7 +213,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   price: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '900',
     color: COLORS.primaryDark,
   },
@@ -198,14 +222,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
-    elevation: 1,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   addButtonSuccess: {
-    backgroundColor: '#059669',
+    backgroundColor: '#005230',
   },
   addButtonText: {
     color: '#FFFFFF',
-    fontSize: 12,
     fontWeight: '800',
+    fontSize: 12,
   },
 });
