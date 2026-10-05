@@ -7,8 +7,16 @@ import {
   StyleSheet,
   Image,
   Alert,
+  Linking,
 } from 'react-native';
-import { COLORS, MobileProduct, API_BASE_URL } from '../lib/constants';
+import {
+  COLORS,
+  MobileProduct,
+  API_BASE_URL,
+  CONTACT_PHONE,
+  CONTACT_PHONE_DISPLAY,
+  CONTACT_WHATSAPP_LINK,
+} from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -464,7 +472,34 @@ export function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 7. Information & Policies Links */}
+      {/* 7. Direct Customer Care & WhatsApp Support */}
+      <View style={styles.supportCard}>
+        <View style={styles.supportBadge}>
+          <Text style={styles.supportBadgeText}>🇳🇬 ABEOKUTA DESK</Text>
+        </View>
+        <Text style={styles.supportTitle}>Customer Care & Bulk Inquiries</Text>
+        <Text style={styles.supportSubtitle}>
+          Need help with your order tracking, custom kg weights, or UK/US diaspora shipments?
+        </Text>
+        <View style={styles.supportBtnRow}>
+          <TouchableOpacity
+            style={styles.callSupportBtn}
+            onPress={() => Linking.openURL(`tel:${CONTACT_PHONE}`)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.callSupportBtnText}>📞 {CONTACT_PHONE_DISPLAY}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.whatsappSupportBtn}
+            onPress={() => Linking.openURL(CONTACT_WHATSAPP_LINK)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.whatsappSupportBtnText}>💬 WhatsApp Support</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* 8. Information & Policies Links */}
       <View style={styles.policyLinksCard}>
         <Text style={styles.policyLinksHeading}>Sawfy White Heritage & Guarantees</Text>
         <View style={styles.policyLinksGrid}>
@@ -1063,6 +1098,79 @@ const styles = StyleSheet.create({
   leadMagnetBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
+    fontWeight: '800',
+  },
+  supportCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#B3E0C9',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  supportBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E6F5ED',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  supportBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: COLORS.primaryDark,
+    letterSpacing: 0.5,
+  },
+  supportTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#1F2937',
+    marginBottom: 4,
+    fontFamily: 'serif',
+  },
+  supportSubtitle: {
+    fontSize: 11,
+    color: '#6B7280',
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  supportBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  callSupportBtn: {
+    flex: 1,
+    minWidth: 130,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  callSupportBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  whatsappSupportBtn: {
+    flex: 1,
+    minWidth: 130,
+    backgroundColor: '#25D366',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  whatsappSupportBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
     fontWeight: '800',
   },
   policyLinksCard: {

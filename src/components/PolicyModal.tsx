@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Linking,
 } from 'react-native';
-import { COLORS } from '../lib/constants';
+import { COLORS, CONTACT_PHONE, CONTACT_PHONE_DISPLAY, CONTACT_WHATSAPP_LINK } from '../lib/constants';
 
 export type PolicyTab = 'about' | 'shipping' | 'terms' | 'privacy';
 
@@ -87,6 +88,29 @@ export function PolicyModal({
                 <Text style={styles.highlightText}>
                   Unlike roadside or open-air market fish, Sawfy White catfish is dried in sealed stainless steel chambers. No sand, no ash, no flies. Clean, crisp, and ready for your soup pot straight from the pack!
                 </Text>
+              </View>
+
+              <View style={[styles.highlightCard, { backgroundColor: '#E6F5ED', borderColor: '#B3E0C9', marginTop: 12 }]}>
+                <Text style={[styles.highlightTitle, { color: COLORS.primaryDark }]}>Customer Care & WhatsApp Support</Text>
+                <Text style={[styles.highlightText, { color: '#005230', marginBottom: 12 }]}>
+                  Have questions about your order, tracking, or diaspora bulk orders? Speak directly with our team in Abeokuta.
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(`tel:${CONTACT_PHONE}`)}
+                    style={{ backgroundColor: COLORS.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>📞 Call: {CONTACT_PHONE_DISPLAY}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(CONTACT_WHATSAPP_LINK)}
+                    style={{ backgroundColor: '#25D366', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>💬 WhatsApp Chat</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}

@@ -14,6 +14,10 @@ export const COLORS = {
 
 export const API_BASE_URL = 'https://shop.sawfywhite.com';
 
+export const CONTACT_PHONE = '+2348059730053';
+export const CONTACT_PHONE_DISPLAY = '+234 805 973 0053';
+export const CONTACT_WHATSAPP_LINK = 'https://wa.me/2348059730053?text=Hello%20Sawfy%20White%2C%20I%20have%20an%20inquiry%20about%20my%20order';
+
 export interface MobileProduct {
   id: string;
   title: string;
