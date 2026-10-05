@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Sawfy White Dried Catfish",
+    "slug": "sawfy-white-mobile",
+    "version": "1.0.0",
+    "scheme": "sawfywhite",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#FAF8F5",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sawfywhite.mobile"
+    },
+    "android": {
+      "package": "com.sawfywhite.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#FAF8F5",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
