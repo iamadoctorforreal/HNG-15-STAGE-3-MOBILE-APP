@@ -12,7 +12,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any; data?: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -95,20 +95,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(regData.error || 'Registration failed');
       }
 
-      // 2. Log in with Supabase directly
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) throw error;
-      if (data.session) {
-        setSession(data.session);
-        setUser(data.user);
-      }
-      return { error: null };
+      // Return registration result so user sees success confirmation and signs in
+      return {
+        error: null,
+        data: {
+          email: regData.email || email.trim(),
+          firstName: regData.firstName || fullName || 'Customer',
+        },
+      };
     } catch (err: any) {
-      return { error: err };
+      return { error: err, data: null };
     } finally {
       setIsLoading(false);
     }

@@ -7,7 +7,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ActivityIndicator,
-  Alert,
   ScrollView,
 } from 'react-native';
 import { COLORS } from '../lib/constants';
@@ -25,6 +24,10 @@ export function AuthScreen() {
   const [fullName, setFullName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState<{
+    email: string;
+    name: string;
+  } | null>(null);
 
   const handleSubmit = async () => {
     setErrorMsg('');
@@ -42,15 +45,16 @@ export function AuthScreen() {
         refreshCart();
       }
     } else {
-      const { error } = await signUp(email, password, fullName);
-      if (error) {
-        setErrorMsg(error.message || 'Registration failed.');
+      const res = await signUp(email, password, fullName);
+      if (res.error) {
+        setErrorMsg(res.error.message || 'Registration failed.');
       } else {
-        Alert.alert(
-          'Account Created & Active',
-          'Welcome to Sawfy White Enterprises! We also sent a welcome email to your inbox.'
-        );
-        refreshCart();
+        // Show explicit registration success screen requiring login
+        setRegistrationSuccess({
+          email: res.data?.email || email.trim(),
+          name: res.data?.firstName || fullName.trim() || 'Valued Customer',
+        });
+        setPassword('');
       }
     }
     setSubmitting(false);
@@ -73,7 +77,14 @@ export function AuthScreen() {
     refreshCart();
   };
 
+  // 1. Logged In State: Show Profile & Sign Out
   if (user) {
+    const firstName =
+      user.user_metadata?.first_name ||
+      user.user_metadata?.full_name?.split(' ')[0] ||
+      user.email?.split('@')[0] ||
+      '';
+
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.profileCard}>
@@ -81,11 +92,15 @@ export function AuthScreen() {
 
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {(user.email?.[0] || 'U').toUpperCase()}
+              {(firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
             </Text>
           </View>
 
+          <Text style={styles.welcomeGreeting}>
+            Welcome back, <Text style={{ color: COLORS.primary }}>{firstName || 'Customer'}</Text>!
+          </Text>
           <Text style={styles.userEmail}>{user.email}</Text>
+
           <View style={styles.statusBadge}>
             <View style={styles.statusDot} />
             <Text style={styles.statusText}>Connected to Sawfy White Cloud</Text>
@@ -94,7 +109,7 @@ export function AuthScreen() {
           <View style={styles.infoBox}>
             <Text style={styles.infoTitle}>Cross-Platform Synchronization Active</Text>
             <Text style={styles.infoText}>
-              You are authenticated with the exact same account as the web storefront. Any items added to your cart here or on shop.sawfywhite.com sync in real-time.
+              You are logged in with the exact same account as the web storefront. Any items added to your cart here or on shop.sawfywhite.com sync in real-time.
             </Text>
           </View>
 
@@ -110,6 +125,54 @@ export function AuthScreen() {
     );
   }
 
+  // 2. Explicit Registration Success Screen
+  if (registrationSuccess) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.successCard}>
+          <BrandLogo size="md" showText={false} />
+
+          <View style={styles.successIcon}>
+            <Text style={styles.successCheck}>✓</Text>
+          </View>
+
+          <View style={styles.successBadge}>
+            <Text style={styles.successBadgeText}>🎉 Registration Successful</Text>
+          </View>
+
+          <Text style={styles.successTitle}>
+            Ẹ kú oríire, {registrationSuccess.name}!
+          </Text>
+
+          <Text style={styles.successSubtitle}>
+            Your Sawfy White account has been created and activated. A personalized welcome confirmation has also been dispatched to:
+          </Text>
+          <Text style={styles.successEmailHighlight}>
+            {registrationSuccess.email}
+          </Text>
+
+          <View style={styles.successPromptBox}>
+            <Text style={styles.successPromptText}>
+              Please sign in with your email and password below to access your account and synchronize your cart.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.submitBtn}
+            onPress={() => {
+              setRegistrationSuccess(null);
+              setIsLoginMode(true);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.submitBtnText}>Sign In with Your Password →</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 3. Logged Out State: Show Sign In or Sign Up
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -153,10 +216,10 @@ export function AuthScreen() {
 
           {!isLoginMode && (
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Full Name</Text>
+              <Text style={styles.inputLabel}>First Name *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Babatunde Adeleke"
+                placeholder="e.g. Babatunde"
                 placeholderTextColor="#999999"
                 value={fullName}
                 onChangeText={setFullName}
@@ -166,7 +229,7 @@ export function AuthScreen() {
           )}
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email Address</Text>
+            <Text style={styles.inputLabel}>Email Address *</Text>
             <TextInput
               style={styles.input}
               placeholder="you@domain.com"
@@ -179,7 +242,7 @@ export function AuthScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password (min. 6 characters)</Text>
+            <Text style={styles.inputLabel}>Password (min. 6 characters) *</Text>
             <TextInput
               style={styles.input}
               placeholder="••••••••"
@@ -200,7 +263,7 @@ export function AuthScreen() {
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.submitBtnText}>
-                {isLoginMode ? 'Sign In →' : 'Create Account & Sign In →'}
+                {isLoginMode ? 'Sign In →' : 'Create Account →'}
               </Text>
             )}
           </TouchableOpacity>
@@ -384,7 +447,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#E6F5ED',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 14,
+    marginTop: 14,
+    marginBottom: 10,
     borderWidth: 2,
     borderColor: '#B3E0C9',
   },
@@ -393,11 +457,17 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.primary,
   },
-  userEmail: {
-    fontSize: 16,
-    fontWeight: '800',
+  welcomeGreeting: {
+    fontSize: 18,
+    fontWeight: '900',
     color: COLORS.textDark,
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+    marginBottom: 8,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -452,5 +522,86 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontWeight: '800',
     fontSize: 12,
+  },
+  successCard: {
+    backgroundColor: COLORS.cardBg,
+    margin: 16,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 135, 81, 0.25)',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  successIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#E6F5ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 14,
+    borderWidth: 2,
+    borderColor: '#B3E0C9',
+  },
+  successCheck: {
+    fontSize: 32,
+    color: COLORS.primary,
+    fontWeight: '900',
+  },
+  successBadge: {
+    backgroundColor: '#E6F5ED',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#B3E0C9',
+  },
+  successBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.textDark,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  successEmailHighlight: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.textDark,
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  successPromptBox: {
+    backgroundColor: '#FAF8F5',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F0EDE8',
+    marginBottom: 20,
+    width: '100%',
+  },
+  successPromptText: {
+    fontSize: 11,
+    color: '#4B5563',
+    lineHeight: 16,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
