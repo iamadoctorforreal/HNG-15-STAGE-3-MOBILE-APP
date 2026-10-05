@@ -92,7 +92,7 @@ function RotatingProfileGreeting({ name }: { name: string }) {
   );
 }
 
-export function AuthScreen() {
+export function AuthScreen({ onLoginSuccess }: { onLoginSuccess?: () => void }) {
   const { user, signIn, signUp, signInWithGoogle, signOut, isLoading } = useAuth();
   const { refreshCart } = useCart();
 
@@ -121,6 +121,9 @@ export function AuthScreen() {
         setErrorMsg(error.message || 'Failed to sign in. Please verify credentials.');
       } else {
         refreshCart();
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
       }
     } else {
       const res = await signUp(email, password, fullName);
@@ -146,6 +149,9 @@ export function AuthScreen() {
       setErrorMsg(error.message || 'Google Sign-In failed.');
     } else {
       refreshCart();
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
     }
     setSubmitting(false);
   };

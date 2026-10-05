@@ -48,21 +48,23 @@ function MainApp() {
             onGoToDashboard={() => setActiveTab('account')}
           />
         )}
-        {activeTab === 'account' && <AuthScreen />}
+        {activeTab === 'account' && (
+          <AuthScreen onLoginSuccess={() => setActiveTab('products')} />
+        )}
       </View>
 
       {/* Bottom Navigation Bar */}
       <SafeAreaView style={styles.tabBarContainer}>
         <View style={styles.tabBar}>
-          {/* Products Tab */}
+          {/* Home Tab */}
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'products' && styles.tabButtonActive]}
             onPress={() => setActiveTab('products')}
             activeOpacity={0.7}
           >
-            <Text style={styles.tabIcon}>🐟</Text>
+            <Text style={styles.tabIcon}>🏠</Text>
             <Text style={[styles.tabLabel, activeTab === 'products' && styles.tabLabelActive]}>
-              Products
+              Home
             </Text>
           </TouchableOpacity>
 
@@ -85,7 +87,7 @@ function MainApp() {
             </Text>
           </TouchableOpacity>
 
-          {/* Account Tab */}
+          {/* Dashboard / Account Tab */}
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'account' && styles.tabButtonActive]}
             onPress={() => setActiveTab('account')}
@@ -93,7 +95,7 @@ function MainApp() {
           >
             <Text style={styles.tabIcon}>{user ? '👤' : '🔑'}</Text>
             <Text style={[styles.tabLabel, activeTab === 'account' && styles.tabLabelActive]}>
-              {user ? 'Account' : 'Sign In'}
+              {user ? 'Dashboard' : 'Sign In'}
             </Text>
           </TouchableOpacity>
         </View>
