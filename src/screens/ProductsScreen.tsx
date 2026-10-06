@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cream,
   },
   listContent: {
-    paddingBottom: 40,
+    paddingBottom: 90,
   },
   card: {
     backgroundColor: COLORS.cardBg,

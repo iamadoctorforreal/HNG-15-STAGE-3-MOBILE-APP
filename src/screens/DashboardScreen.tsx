@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
   },
   contentInner: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 90,
   },
   profileHeaderCard: {
     backgroundColor: '#FFFFFF',
