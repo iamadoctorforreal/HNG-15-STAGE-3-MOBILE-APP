@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../lib/constants';
 import { BrandLogo } from './BrandLogo';
 import { useAuth } from '../context/AuthContext';
@@ -19,8 +20,11 @@ export function Header({
   onGoToAccount?: () => void;
   onGoToHome?: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [greetingIdx, setGreetingIdx] = useState(0);
+
+  const topInset = Math.max(insets.top, 24) + 10;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -45,7 +49,7 @@ export function Header({
     '';
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: topInset }]}>
       <View style={styles.content}>
         <TouchableOpacity
           onPress={onGoToHome}
@@ -79,7 +83,6 @@ export function Header({
 const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.cardBg,
-    paddingTop: 48,
     paddingBottom: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,

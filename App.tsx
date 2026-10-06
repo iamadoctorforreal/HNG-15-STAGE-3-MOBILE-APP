@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider, useCart } from './src/context/CartContext';
 import { WishlistProvider } from './src/context/WishlistContext';
@@ -17,6 +18,15 @@ function MainApp() {
   const [showSplash, setShowSplash] = useState(true);
   const { totalItems } = useCart();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  // Dynamic native WindowInsets:
+  // insets.bottom measures the exact hardware window insets (WindowInsetsCompat on Android).
+  // If Android 3-button bar is active (48-56dp), insets.bottom returns that exact value.
+  // We add 6dp cushion so the icons float cleanly above the navigation buttons.
+  const bottomInset = insets.bottom > 0
+    ? insets.bottom + 6
+    : (Platform.OS === 'android' ? 56 : 10);
 
   return (
     <View style={styles.container}>
@@ -62,7 +72,7 @@ function MainApp() {
       </View>
 
       {/* Bottom Navigation Bar */}
-      <SafeAreaView style={styles.tabBarContainer}>
+      <View style={[styles.tabBarContainer, { paddingBottom: bottomInset }]}>
         <View style={styles.tabBar}>
           {/* Home Tab */}
           <TouchableOpacity
@@ -119,20 +129,22 @@ function MainApp() {
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <MainApp />
-        </WishlistProvider>
-      </CartProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <MainApp />
+          </WishlistProvider>
+        </CartProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -149,7 +161,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'android' ? 58 : 10,
     elevation: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
